@@ -1,0 +1,8 @@
+
+$smtp = new Smtp("", 25, 2);
+$smtp->auth('username', 'password');
+$smtp->from('pelish8@gmail.com');
+$smtp->to('to@to.com');
+$smtp->subject("subject");
+$smtp->body("message");
+$smtp->send();

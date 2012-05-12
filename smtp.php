@@ -69,9 +69,6 @@ class Smtp {
 				fclose($this->fp);
 				exit;
 			}
-			else {
-				echo $response . '<br/>';
-			}
 		}
 		else {
 			echo "err: <b>$response</b>";
@@ -110,9 +107,6 @@ class Smtp {
 	function prepareMsg() {
 		$out = "DATA\r\n";
 		fwrite($this->fp, $out);
-		
-		fwrite($this->fp, "CC:astevic@me.com\r\n");
-		fwrite($this->fp, "CC:astevic@me.com\r\n");
 		
 		$out = "SUBJECT:$this->subject\r\n\r\n";
 		fwrite($this->fp, $out);
