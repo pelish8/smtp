@@ -3,8 +3,7 @@
 class Smtp {
 	protected $server;
   	protected $port;
-  	protected $error;
-	protected $errorStr;
+  	public $err;
 	protected $timeout = 30;
 	protected $to = array();
 	protected $from;
@@ -31,15 +30,20 @@ class Smtp {
 
 	function send() {
 		$this->fp = fsockopen($this->server, $this->port, $error, $errorStr, $this->timeout);
+		if (!$this->fp) {
+		    echo "$errorStr ($error)<br />\n";
+			exit;
+		}
 		$out = "HELO {$this->server}\r\n";
 		$this->error(fgets($this->fp, 1280));
 		fwrite($this->fp, $out);
 		$this->error(fgets($this->fp, 128));
-		$this->prpareAuth();
-		$this->prepareFrom();
-		$this->prepareTo();
-		$this->prepareMsg();
+		if(!$this->prpareAuth()) return false;
+		if(!$this->prepareFrom()) return false;
+		if(!$this->prepareTo()) {echo 0;return false;}
+		if(!$this->prepareMsg()) {echo 1;return false;}
 		fclose($this->fp);
+		return true;
 	}
 	
 	function auth($username, $password) {
@@ -48,42 +52,45 @@ class Smtp {
 	}
 	
 	private function prpareAuth() {
+		$err = false;
 		if(!empty($this->username_64) && !empty($this->password_64)) {
 			$out = "auth login\r\n";
 			fwrite($this->fp, $out);
-			$this->error(fgets($this->fp, 1280));
+			$err = $this->error(fgets($this->fp, 1280));
 			fwrite($this->fp, $this->username_64 . "\r\n");
-			$this->error(fgets($this->fp, 1280));
+			$err = $this->error(fgets($this->fp, 1280));
 			fwrite($this->fp, $this->password_64 . "\r\n");
-			$this->error(fgets($this->fp, 1280));
-			
+			$err = $this->error(fgets($this->fp, 1280));
 		}
+		return $err;
 	}
 	
 	private function error($response) {
 		$code = substr($response, 0, 3);
-		
 		if(array_key_exists($code, $this->codes)) {
 			if(!$this->codes[$code]) {
-				echo "<pre>$response</pre>";
-				fclose($this->fp);
-				exit;
+				$this->err = "$response";
+				return false;
 			}
 		}
 		else {
-			echo "err: <b>$response</b>";
-			exit;
+			$this->err = "$response";
+			return false;
 		}
-		// echo $code . ' ';
+		return true;
 	}
+	
 	function to($email) {
 		array_push($this->to, $email);
 	}
+	
 	function prepareTo() {
-		$out = "RCPT TO:" . $this->to[0]."\r\n";
-		fwrite($this->fp, $out);
-		$this->error(fgets($this->fp, 128));
-		
+		foreach($this->to AS $email) {
+			$out = "RCPT TO:" . $email . "\r\n";
+			fwrite($this->fp, $out);
+			$err = $this->error(fgets($this->fp, 128));
+		}
+		return $err;
 	}
 	
 	function from($email) {
@@ -93,7 +100,7 @@ class Smtp {
 	function prepareFrom() {
 		$out = "MAIL FROM:" . $this->from."\r\n";
 		fwrite($this->fp, $out);
-		$this->error(fgets($this->fp, 128));
+		return $this->error(fgets($this->fp, 128));
 	}
 	
 	function subject($subject) {
@@ -116,7 +123,7 @@ class Smtp {
 		
 		$out = ".\r\n";
 		fwrite($this->fp, $out);
-		$this->error(fgets($this->fp, 128));
+		return $this->error(fgets($this->fp, 128));
 		
 	}
 }
