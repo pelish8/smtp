@@ -1,5 +1,5 @@
 
-$smtp = new Smtp("", 25, 2);
+$smtp = new Smtp("server", 25, 2);
 $smtp->auth('username', 'password');
 $smtp->from('pelish8@gmail.com');
 $smtp->to('to@to.com');
